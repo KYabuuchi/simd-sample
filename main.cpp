@@ -64,11 +64,7 @@ static inline float innerProductAVX512(const float* a, const float* b, std::size
   for (std::size_t i = 0; i < n; i += INTERVAL) {
     __m512 ax16 = _mm512_load_ps(&a[i]);
     __m512 bx16 = _mm512_load_ps(&b[i]);
-#ifdef __FMA__
     sumx16 = _mm512_fmadd_ps(ax16, bx16, sumx16);
-#else
-    sumx16 = _mm512_add_ps(sumx16, _mm512_mul_ps(ax16, bx16));
-#endif  // __FMA__
   }
 
   alignas(ALIGN) float s[INTERVAL] = {0};
@@ -91,11 +87,7 @@ static inline float innerProductAVX(const float* a, const float* b, std::size_t 
   for (std::size_t i = 0; i < n; i += INTERVAL) {
     __m256 ax8 = _mm256_load_ps(&a[i]);
     __m256 bx8 = _mm256_load_ps(&b[i]);
-#ifdef __FMA__
     sumx8 = _mm256_fmadd_ps(ax8, bx8, sumx8);
-#else
-    sumx8 = _mm256_add_ps(sumx8, _mm256_mul_ps(ax8, bx8));
-#endif  // __FMA__
   }
 
   alignas(ALIGN) float s[INTERVAL] = {0};
@@ -133,21 +125,17 @@ int main()
     b[i] = static_cast<float>(i);
   }
 
-#ifdef __FMA__
-  std::cout << "fma enabled" << std::endl;
-#endif
-
 #if defined(ENABLE_AVX512)
-  std::cout << "avx512" << std::endl;
+  std::cout << "avx512: \t";
   std::cout << innerProductAVX512(a.get(), b.get(), N_ELEMENT) << std::endl;
 #endif
 
 #if defined(ENABLE_AVX)
-  std::cout << "avx" << std::endl;
+  std::cout << "avx: \t";
   std::cout << innerProductAVX(a.get(), b.get(), N_ELEMENT) << std::endl;
 #endif
 
-  std::cout << "std::fma" << std::endl;
+  std::cout << "std::fma: \t";
   std::cout << innerProductNormal(a.get(), b.get(), N_ELEMENT) << std::endl;
 
   return 0;

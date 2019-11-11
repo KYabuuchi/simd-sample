@@ -22,17 +22,23 @@ endif()
 message("Build Type:\n\t${CMAKE_BUILD_TYPE}")
 
 # Optimize flag
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    set(OPTIMIZE_FLAGS "-mtune=native -march=native -mfpmath=both -Ofast")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZE_FLAGS}")
-    message("Optimization flags:\n\t${OPTIMIZE_FLAGS}")
+if(NOT DEFINED AVX512)
+    set(AVX512 0)
+endif()
+message("Build Type:\n\t${CMAKE_BUILD_TYPE}")
+
+set(OPTIMIZE_FLAGS "-mtune=native -march=native -mfpmath=both -Ofast")
+message("AVX512:\n\t${AVX512}")
+if(${AVX512})
+    set(OPTIMIZE_FLAGS "${OPTIMIZE_FLAGS} -mfma -mavx512f -DENABLE_AVX512")
 else()
-    set(OPTIMIZE_FLAGS "")
-    message("Not Optimized:\n\tBecause build type is ${CMAKE_BUILD_TYPE}")
+    set(OPTIMIZE_FLAGS "${OPTIMIZE_FLAGS} -mfma -mavx -DENABLE_AVX")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mfma -DENABLE_AVX512")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma -DENABLE_AVX")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZE_FLAGS}")
+message("Optimization flags:\n\t${OPTIMIZE_FLAGS}")
+
 
 # OpenCV
 find_package(OpenCV REQUIRED)
