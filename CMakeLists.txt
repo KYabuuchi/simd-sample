@@ -31,8 +31,8 @@ else()
     message("Not Optimized:\n\tBecause build type is ${CMAKE_BUILD_TYPE}")
 endif()
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mfma -DENABLE_AVX512")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma -DENABLE_AVX")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mfma -DENABLE_AVX512")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma -DENABLE_AVX")
 
 # OpenCV
 find_package(OpenCV REQUIRED)

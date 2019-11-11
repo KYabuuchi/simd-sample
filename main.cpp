@@ -13,30 +13,8 @@
 #include <numeric>
 #include <type_traits>
 
-#if defined(ENABLE_AVX512) || defined(ENABLE_AVX) || defined(ENABLE_SSE)
-#ifdef _MSC_VER
-#include <intrin.h>
-#else
+// SIMD
 #include <x86intrin.h>
-#endif  // _MSC_VER
-#elif defined(ENABLE_NEON)
-#include <arm_neon.h>
-#endif
-
-
-/*!
- * @brief アラインメントされたメモリを動的確保する関数
- * @tparam T  確保するメモリの要素型．この関数の返却値はT*
- * @param [in] nBytes     確保するメモリサイズ (単位はbyte)
- * @param [in] alignment  アラインメント (2のべき乗を指定すること)
- * @return  アラインメントし，動的確保されたメモリ領域へのポインタ
- */
-template <typename T = void>
-static inline T* alignedMalloc(std::size_t nBytes, std::size_t alignment = alignof(T)) noexcept
-{
-  void* p;
-  return reinterpret_cast<T*>(::posix_memalign(&p, alignment, nBytes) == 0 ? p : nullptr);
-}
 
 /*!
  * @brief アラインメントされたメモリを動的確保する関数．配列向けにalignedMallocの引数指定が簡略化されている
@@ -48,16 +26,8 @@ static inline T* alignedMalloc(std::size_t nBytes, std::size_t alignment = align
 template <typename T>
 static inline T* alignedAllocArray(std::size_t size, std::size_t alignment = alignof(T)) noexcept
 {
-  return alignedMalloc<T>(size * sizeof(T), alignment);
-}
-
-/*!
- * @brief アラインメントされたメモリを解放する関数
- * @param [in] ptr  解放対象のメモリの先頭番地を指すポインタ
- */
-static inline void alignedFree(void* ptr) noexcept
-{
-  std::free(ptr);
+  void* p;
+  return reinterpret_cast<T*>(::posix_memalign(&p, alignment, size * sizeof(T)) == 0 ? p : nullptr);
 }
 
 /*!
@@ -66,7 +36,7 @@ static inline void alignedFree(void* ptr) noexcept
 struct AlignedDeleter {
   void operator()(void* p) const noexcept
   {
-    alignedFree(p);
+    std::free(p);
   }
 };
 
@@ -157,6 +127,7 @@ int main()
 
   std::unique_ptr<float[], AlignedDeleter> a(alignedAllocArray<float>(N_ELEMENT, ALIGN));
   std::unique_ptr<float[], AlignedDeleter> b(alignedAllocArray<float>(N_ELEMENT, ALIGN));
+
   for (int i = 0; i < N_ELEMENT; i++) {
     a[i] = static_cast<float>(i);
     b[i] = static_cast<float>(i);
