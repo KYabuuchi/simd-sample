@@ -4,7 +4,6 @@
 #error Macro: ENABLE_AVX is defined, but unable to use AVX intrinsic functions
 #endif
 
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -87,7 +86,6 @@ static constexpr int ALIGN = 8;
  * @param [in] n  ベクトルのサイズ
  * @return  内積
  */
-
 #if defined(ENABLE_AVX512)
 static inline float innerProductAVX512(const float* a, const float* b, std::size_t n)
 {
@@ -163,6 +161,10 @@ int main()
     a[i] = static_cast<float>(i);
     b[i] = static_cast<float>(i);
   }
+
+#ifdef __FMA__
+  std::cout << "fma enabled" << std::endl;
+#endif
 
 #if defined(ENABLE_AVX512)
   std::cout << "avx512" << std::endl;

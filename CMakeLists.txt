@@ -24,14 +24,15 @@ message("Build Type:\n\t${CMAKE_BUILD_TYPE}")
 # Optimize flag
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(OPTIMIZE_FLAGS "-mtune=native -march=native -mfpmath=both -Ofast")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZE_FLAGSS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZE_FLAGS}")
     message("Optimization flags:\n\t${OPTIMIZE_FLAGS}")
 else()
     set(OPTIMIZE_FLAGS "")
     message("Not Optimized:\n\tBecause build type is ${CMAKE_BUILD_TYPE}")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -DENABLE_AVX512")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mfma -DENABLE_AVX512")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma -DENABLE_AVX")
 
 # OpenCV
 find_package(OpenCV REQUIRED)
