@@ -1,53 +1,6 @@
-#if defined(ENABLE_AVX512) && !defined(__AVX512F__)
-#error Macro: ENABLE_AVX512 is defined, but unable to use AVX512F intrinsic functions
-#elif defined(ENABLE_AVX) && !defined(__AVX__)
-#error Macro: ENABLE_AVX is defined, but unable to use AVX intrinsic functions
-#endif
-
-#include <algorithm>
+#include "simd.hpp"
 #include <cmath>
-#include <cstddef>
-#include <cstdlib>
 #include <iostream>
-#include <memory>
-#include <numeric>
-#include <type_traits>
-
-// SIMD
-#include <x86intrin.h>
-
-/*!
- * @brief アラインメントされたメモリを動的確保する関数．配列向けにalignedMallocの引数指定が簡略化されている
- * @tparam T  確保する配列の要素型．この関数の返却値はT*
- * @param [in] size       確保する要素数．すなわち確保するサイズは size * sizeof(T)
- * @param [in] alignment  アラインメント (2のべき乗を指定すること)
- * @return  アラインメントし，動的確保されたメモリ領域へのポインタ
- */
-template <typename T>
-static inline T* alignedAllocArray(std::size_t size, std::size_t alignment = alignof(T)) noexcept
-{
-  void* p;
-  return reinterpret_cast<T*>(::posix_memalign(&p, alignment, size * sizeof(T)) == 0 ? p : nullptr);
-}
-
-/*!
- * @brief std::unique_ptr で利用するアラインされたメモリ用のカスタムデリータ
- */
-struct AlignedDeleter {
-  void operator()(void* p) const noexcept
-  {
-    std::free(p);
-  }
-};
-
-#if defined(ENABLE_AVX512)
-static constexpr int ALIGN = alignof(__m512);
-#elif defined(ENABLE_AVX)
-static constexpr int ALIGN = alignof(__m256);
-#else
-static constexpr int ALIGN = 8;
-#endif
-
 
 /*!
  * @brief 内積計算を行う関数
@@ -79,7 +32,7 @@ static inline float innerProductAVX512(const float* a, const float* b, std::size
 }
 #endif
 
-#if defined(ENABLE_AVX)
+#if defined(ENABLE_AVX512) || defined(ENABLE_AVX)
 static inline float innerProductAVX(const float* a, const float* b, std::size_t n)
 {
   static constexpr std::size_t INTERVAL = sizeof(__m256) / sizeof(float);
@@ -126,16 +79,16 @@ int main()
   }
 
 #if defined(ENABLE_AVX512)
-  std::cout << "avx512: \t";
+  std::cout << "512: \t";
   std::cout << innerProductAVX512(a.get(), b.get(), N_ELEMENT) << std::endl;
 #endif
 
-#if defined(ENABLE_AVX)
+#if defined(ENABLE_AVX512) || defined(ENABLE_AVX)
   std::cout << "avx: \t";
   std::cout << innerProductAVX(a.get(), b.get(), N_ELEMENT) << std::endl;
 #endif
 
-  std::cout << "std::fma: \t";
+  std::cout << "fma: \t";
   std::cout << innerProductNormal(a.get(), b.get(), N_ELEMENT) << std::endl;
 
   return 0;
