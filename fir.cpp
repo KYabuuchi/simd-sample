@@ -68,89 +68,50 @@ cv::Mat firForeach(const int offset)
   return sum;
 }
 
-namespace A
+namespace
 {
-// for i in ORDER
-// for j in pixels
 constexpr std::size_t INTERVAL = sizeof(__m512) / sizeof(float);
 int offset = 0;
-static inline void implFir512(float* sum, const int i)
+
+inline void imple(__m512& sum16, int i, int j)
 {
   uchar* uchar_input = images.at(i + offset).data;
-  float* input = reinterpret_cast<float*>(uchar_input);
-#pragma omp parallel for
-  for (int j = 0; j < 600 * 800; j += INTERVAL) {
-    __m512 sum16 = _mm512_load_ps(&sum[j]);
-    __m512 input16 = _mm512_load_ps(&input[j]);
-    sum16 = _mm512_fmadd_ps(input16, coeff16[i], sum16);
-    _mm512_store_ps(&sum[j], sum16);
-  }
+  float* float_input = reinterpret_cast<float*>(uchar_input);
+  sum16 = _mm512_fmadd_ps(_mm512_load_ps(&float_input[j]), coeff16[i], sum16);
 }
-
-cv::Mat firAVX512()
+inline cv::Mat firAVX512()
 {
   Timer t("512");
   cv::Mat sum_image = cv::Mat::zeros(600, 800, CV_32FC1);
   uchar* uchar_sum = sum_image.data;
   float* sum = reinterpret_cast<float*>(uchar_sum);
 
-  for (int i = 0; i < 20; i++) {
-    implFir512(sum, i);
-  }
-  return sum_image;
-}
-}  // namespace A
-
-namespace B
-{
-// for j in pixels
-// for i in ORDER
-constexpr std::size_t INTERVAL = sizeof(__m512) / sizeof(float);
-int offset = 0;
-static inline void implFir512(float* sum, const int i)
-{
-  uchar* uchar_input = images.at(i + offset).data;
-  float* input = reinterpret_cast<float*>(uchar_input);
-#pragma omp parallel for
-  for (int j = 0; j < 600 * 800; j += INTERVAL) {
-    __m512 sum16 = _mm512_load_ps(&sum[j]);
-    __m512 input16 = _mm512_load_ps(&input[j]);
-    sum16 = _mm512_fmadd_ps(input16, coeff16[i], sum16);
-    _mm512_store_ps(&sum[j], sum16);
-  }
-}
-cv::Mat firAVX512()
-{
-  Timer t("512");
-  cv::Mat sum_image = cv::Mat::zeros(600, 800, CV_32FC1);
-  uchar* uchar_sum = sum_image.data;
-  float* sum = reinterpret_cast<float*>(uchar_sum);
-
-
 #pragma omp parallel for
   for (int j = 0; j < 600 * 800; j += INTERVAL) {
     __m512 sum16 = _mm512_load_ps(&sum[j]);
 
-    for (int i = 0; i < ORDER; i++) {
-      uchar* uchar_input = images.at(i + offset).data;
-      float* input = reinterpret_cast<float*>(uchar_input);
-
-      __m512 input16 = _mm512_load_ps(&input[j]);
-      sum16 = _mm512_fmadd_ps(input16, coeff16[i], sum16);
-      _mm512_store_ps(&sum[j], sum16);
+    for (int i = 0; i < ORDER; ++i) {
+      imple(sum16, i, j);
     }
+    _mm512_store_ps(&sum[j], sum16);
   }
-
-
   return sum_image;
 }
-}  // namespace B
+}  // namespace
 
 int main()
 {
   std::cout << "init start" << std::endl;
   init();
 
+  std::cout << "fir512 start" << std::endl;
+  for (int i = 0; i < 10; i++) {
+    ::offset = i;
+    cv::Mat sum = ::firAVX512();
+    sum.convertTo(sum, CV_8UC1);
+    cv::imshow("image", sum);
+    cv::waitKey(50);
+  }
   std::cout << "fir start" << std::endl;
   for (int i = 0; i < 10; i++) {
     cv::Mat sum = fir(i);
@@ -165,21 +126,6 @@ int main()
     cv::imshow("image", sum);
     cv::waitKey(50);
   }
-  std::cout << "fir512 start" << std::endl;
-  for (int i = 0; i < 10; i++) {
-    B::offset = i;
-    cv::Mat sum = B::firAVX512();
-    sum.convertTo(sum, CV_8UC1);
-    cv::imshow("image", sum);
-    cv::waitKey(50);
-  }
-  std::cout << "fir512 start" << std::endl;
-  for (int i = 0; i < 10; i++) {
-    A::offset = i;
-    cv::Mat sum = A::firAVX512();
-    sum.convertTo(sum, CV_8UC1);
-    cv::imshow("image", sum);
-    cv::waitKey(50);
-  }
+
   return 0;
 }
