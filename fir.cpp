@@ -12,11 +12,11 @@ const int ORDER = 20;
 const std::array<float, ORDER> coeff = {
     0.0101, -0.0053, -0.0306, -0.0160, 0.0641, 0.0891, -0.0436, -0.1685, -0.0584, 0.1616, 0.1616, -0.0584, -0.1685, -0.0436, 0.0891, 0.0641, -0.0160, -0.0306, -0.0053, 0.0101};
 
-#if defined(ENABLE_AVX512)
+#if defined(__AVX512F__)
 __m512 coeff16[ORDER];
 #endif
 
-#if defined(ENABLE_AVX512) || defined(ENABLE_AVX)
+#if defined(__AVX__)
 __m256 coeff8[ORDER];
 #endif
 
@@ -37,25 +37,23 @@ void init()
     cv::waitKey(2);
   }
 
-#if defined(ENABLE_AVX) || defined(ENABLE_AVX512)
+#if defined(__AVX__)
   for (int i = 0; i < ORDER; i++) {
     alignas(ALIGN) float c[8] = {};
     for (int j = 0; j < 8; j++)
       c[j] = coeff[i];
-
     __m256 c8 = _mm256_load_ps(c);
     coeff8[i] = c8;
   }
-#if defined(ENABLE_AVX512)
+#endif
+#if defined(__AVX512F__)
   for (int i = 0; i < ORDER; i++) {
     alignas(ALIGN) float c[16] = {};
     for (int j = 0; j < 16; j++)
       c[j] = coeff[i];
-
     __m512 c16 = _mm512_load_ps(c);
     coeff16[i] = c16;
   }
-#endif
 #endif
 }
 
@@ -83,7 +81,7 @@ cv::Mat firForeach()
   return sum;
 }
 
-#if defined(ENABLE_AVX512)
+#if defined(__AVX512F__)
 inline void impleAVX512(__m512& sum16, int i, int j)
 {
   uchar* uchar_input = images.at(i + offset).data;
@@ -112,14 +110,13 @@ inline cv::Mat firAVX512()
 }
 #endif
 
-#if defined(ENABLE_AVX)
+#if defined(__AVX__)
 inline void impleAVX(__m256& sum8, int i, int j)
 {
   uchar* uchar_input = images.at(i + offset).data;
   float* float_input = reinterpret_cast<float*>(uchar_input);
   sum8 = _mm256_fmadd_ps(_mm256_load_ps(&float_input[j]), coeff8[i], sum8);
 }
-
 inline cv::Mat firAVX()
 {
   Timer t("256");
@@ -146,7 +143,7 @@ int main()
   std::cout << "init start" << std::endl;
   init();
 
-#if defined(ENABLE_AVX512)
+#if defined(__AVX512F__)
   std::cout << "avx512 start" << std::endl;
   for (int i = 0; i < 10; i++) {
     offset = i;
@@ -157,7 +154,7 @@ int main()
   }
 #endif
 
-#if defined(ENABLE_AVX)
+#if defined(__AVX__)
   std::cout << "avx start" << std::endl;
   for (int i = 0; i < 10; i++) {
     offset = i;

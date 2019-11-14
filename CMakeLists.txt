@@ -26,12 +26,11 @@ message("AVX512:\n\t${AVX512}")
 
 # Optimize flag
 set(OPTIMIZE_FLAGS "-mtune=native -march=native -mfpmath=both -Ofast")
-if(${AVX512})
-  set(OPTIMIZE_FLAGS "${OPTIMIZE_FLAGS} -mfma -mavx512f -DENABLE_AVX512")
+if(AVX512)
+  set(OPTIMIZE_FLAGS "${OPTIMIZE_FLAGS} -mfma -mavx -mavx512f")
 else()
-  set(OPTIMIZE_FLAGS "${OPTIMIZE_FLAGS} -mfma -mavx -DENABLE_AVX")
+  set(OPTIMIZE_FLAGS "${OPTIMIZE_FLAGS} -mfma -mavx")
 endif()
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZE_FLAGS}")
 message("CMAKE_CXX_FLAGS:\n\t${CMAKE_CXX_FLAGS}")
 

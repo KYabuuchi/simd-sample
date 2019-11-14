@@ -1,11 +1,5 @@
 #pragma once
 
-#if defined(ENABLE_AVX512) && !defined(__AVX512F__)
-#error Macro: ENABLE_AVX512 is defined, but unable to use AVX512F intrinsic functions
-#elif defined(ENABLE_AVX) && !defined(__AVX__)
-#error Macro: ENABLE_AVX is defined, but unable to use AVX intrinsic functions
-#endif
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdlib>
@@ -38,9 +32,9 @@ struct AlignedDeleter {
   }
 };
 
-#if defined(ENABLE_AVX512)
+#if defined(__AVX512F__)
 static constexpr int ALIGN = alignof(__m512);  // = 64
-#elif defined(ENABLE_AVX)
+#elif defined(__AVX__)
 static constexpr int ALIGN = alignof(__m256);  // = 32
 #else
 static constexpr int ALIGN = 8;

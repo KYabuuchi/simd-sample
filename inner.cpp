@@ -9,7 +9,7 @@
  * @param [in] n  ベクトルのサイズ
  * @return  内積
  */
-#if defined(ENABLE_AVX512)
+#if defined(__AVX512F__)
 static inline float innerProductAVX512(const float* a, const float* b, std::size_t n)
 {
   static constexpr std::size_t INTERVAL = sizeof(__m512) / sizeof(float);
@@ -32,7 +32,7 @@ static inline float innerProductAVX512(const float* a, const float* b, std::size
 }
 #endif
 
-#if defined(ENABLE_AVX512) || defined(ENABLE_AVX)
+#if defined(__AVX__)
 static inline float innerProductAVX(const float* a, const float* b, std::size_t n)
 {
   static constexpr std::size_t INTERVAL = sizeof(__m256) / sizeof(float);
@@ -59,8 +59,6 @@ static inline float innerProductNormal(const float* a, const float* b, std::size
 {
   float sum = 0.0f;
   for (std::size_t i = 0; i < n; i++) {
-    // <cmath>のstd::fma関数を用いると，積和演算がハードウェアのサポートを受けることを期待できる
-    // 処理としては， sum += a[i] * b[i]; と同じ
     sum = std::fma(a[i], b[i], sum);
   }
   return sum;
@@ -78,13 +76,13 @@ int main()
     b[i] = static_cast<float>(i);
   }
 
-#if defined(ENABLE_AVX512)
+#if defined(__AVX512F__)
   std::cout << "512: \t";
   std::cout << innerProductAVX512(a.get(), b.get(), N_ELEMENT) << std::endl;
 #endif
 
-#if defined(ENABLE_AVX512) || defined(ENABLE_AVX)
-  std::cout << "avx: \t";
+#if defined(__AVX__)
+  std::cout << "256: \t";
   std::cout << innerProductAVX(a.get(), b.get(), N_ELEMENT) << std::endl;
 #endif
 
