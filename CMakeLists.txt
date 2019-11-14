@@ -33,11 +33,16 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZE_FLAGS}")
-message("Optimization flags:\n\t${OPTIMIZE_FLAGS}")
+message("CMAKE_CXX_FLAGS:\n\t${CMAKE_CXX_FLAGS}")
 
 # OpenCV
 find_package(OpenCV REQUIRED)
 message("OpenCV version:\n\t${OpenCV_VERSION}")
+
+# OpenMP
+find_package(OpenMP)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 # =======================================
 add_executable(inner inner.cpp)
