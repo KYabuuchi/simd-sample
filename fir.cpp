@@ -8,7 +8,7 @@
 // cv::Mat1f
 std::array<cv::Mat, 40> images;
 
-const int ORDER = 20;
+constexpr int ORDER = 20;
 const std::array<float, ORDER> coeff = {
     0.0101, -0.0053, -0.0306, -0.0160, 0.0641, 0.0891, -0.0436, -0.1685, -0.0584, 0.1616, 0.1616, -0.0584, -0.1685, -0.0436, 0.0891, 0.0641, -0.0160, -0.0306, -0.0053, 0.0101};
 
@@ -81,34 +81,64 @@ cv::Mat firForeach()
   return sum;
 }
 
+namespace
+{
 #if defined(__AVX512F__)
+
+float* float_input[20];
+
+inline void impleAVX512Init(__m512& sum16, int i, int j)
+{
+  float_input[i] = reinterpret_cast<float*>(images.at(i + offset).data);
+  sum16 = _mm512_fmadd_ps(_mm512_load_ps(&float_input[i][j]), coeff16[i], sum16);
+}
+
 inline void impleAVX512(__m512& sum16, int i, int j)
 {
-  uchar* uchar_input = images.at(i + offset).data;
-  float* float_input = reinterpret_cast<float*>(uchar_input);
-  sum16 = _mm512_fmadd_ps(_mm512_load_ps(&float_input[j]), coeff16[i], sum16);
+  sum16 = _mm512_fmadd_ps(_mm512_load_ps(&float_input[i][j]), coeff16[i], sum16);
 }
+
+cv::Mat sum_image = cv::Mat::zeros(600, 800, CV_32FC1);
+
 
 inline cv::Mat firAVX512()
 {
-  Timer t("512");
-  cv::Mat sum_image = cv::Mat::zeros(600, 800, CV_32FC1);
-  uchar* uchar_sum = sum_image.data;
-  float* sum = reinterpret_cast<float*>(uchar_sum);
-
   static constexpr std::size_t INTERVAL = sizeof(__m512) / sizeof(float);
-#pragma omp parallel for
-  for (int j = 0; j < 600 * 800; j += INTERVAL) {
-    __m512 sum16 = _mm512_load_ps(&sum[j]);
+  float* sum = reinterpret_cast<float*>(sum_image.data);
 
+  Timer t("512");
+
+  // 初期化
+  {
+    __m512 sum16 = _mm512_setzero_ps();
     for (int i = 0; i < ORDER; ++i) {
-      impleAVX512(sum16, i, j);
+      impleAVX512Init(sum16, i, 0);
+    }
+    _mm512_store_ps(&sum[0], sum16);
+  }
+
+// mainループ
+#pragma omp parallel for
+  for (int j = INTERVAL; j < 600 * 800; j += INTERVAL) {
+    __m512 sum16 = _mm512_setzero_ps();
+    for (int i = 0; i < ORDER; i += 10) {
+      impleAVX512(sum16, 0 + i, j);
+      impleAVX512(sum16, 1 + i, j);
+      impleAVX512(sum16, 2 + i, j);
+      impleAVX512(sum16, 3 + i, j);
+      impleAVX512(sum16, 4 + i, j);
+      impleAVX512(sum16, 5 + i, j);
+      impleAVX512(sum16, 6 + i, j);
+      impleAVX512(sum16, 7 + i, j);
+      impleAVX512(sum16, 8 + i, j);
+      impleAVX512(sum16, 9 + i, j);
     }
     _mm512_store_ps(&sum[j], sum16);
   }
   return sum_image;
 }
 #endif
+}  // namespace
 
 #if defined(__AVX__)
 inline void impleAVX(__m256& sum8, int i, int j)
